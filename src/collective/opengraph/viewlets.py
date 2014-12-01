@@ -5,8 +5,6 @@ from zope.interface import implements
 from zope.component import getUtility
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
-from ordereddict import OrderedDict
-
 from plone.app.layout.viewlets import ViewletBase
 from plone.registry.interfaces import IRegistry
 
@@ -24,15 +22,6 @@ def decode_str(val, encoding):
     if isinstance(val, unicode):
         return val
     return unicode(val, 'utf8')
-
-
-class LastUpdatedOrderedDict(OrderedDict):
-    'Store items in the order the keys were last added'
-
-    def __setitem__(self, key, value):
-        if key in self:
-            del self[key]
-        OrderedDict.__setitem__(self, key, value)
 
 
 class ATMetatags(object):
@@ -57,19 +46,38 @@ class ATMetatags(object):
 
     @property
     def metatags(self):
-        tags = LastUpdatedOrderedDict()
-        tags.update([('og:title', self.title),
-                     ('og:url', self.context.absolute_url()),
-                     ('og:image', self.image_url),
-                     ('og:site_name', self.sitename),
-                     ('og:description', self.description)])
+        tags = [
+            {
+                'property': 'og:title',
+                'content': self.title
+            },
+            {
+                'property': 'og:url',
+                'content': self.context.absolute_url()
+            },
+            {
+                'property': 'og:image',
+                'content': self.image_url
+            },
+            {
+                'property': 'og:site_name',
+                'content': self.sitename
+            },
+            {
+                'property': 'og:description',
+                'content': self.description
+            }
+        ]
 
         if self.content_type:
-            tags.update({'og:type': self.content_type})
+            tags.append({'property': 'og:type',
+                         'content': self.content_type})
             if self.admins:
-                tags.update({'fb:admins': self.admins})
+                tags.append({'property': 'fb:admins',
+                             'content': self.admins})
             if self.app_id:
-                tags.update({'fb:app_id': self.app_id})
+                tags.append({'property': 'fb:app_id',
+                             'content': self.app_id})
         return tags
 
     @property
